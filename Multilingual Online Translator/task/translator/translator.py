@@ -1,17 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 
+
+
 def show_message():
     print('Type "en" if you want to translate from French into English, or "fr" if you want to translate from English into French:')
 
-def make_url(language_to: str, text: str) -> str:
-    full_url = 'https://context.reverso.net/translation/'
-    if language_to == 'fr':
-        full_url += 'english-french/'
-    else:
-        full_url += 'french-english/'
-
-    return full_url + text
+def make_url(language_to: str, word: str) -> str:
+    language_dic = {'fr': 'english-french', 'en': 'french-english'}
+    return f"https://context.reverso.net/translation/{language_dic[language_to]}/{word}"
 
 def main():
     show_message()
