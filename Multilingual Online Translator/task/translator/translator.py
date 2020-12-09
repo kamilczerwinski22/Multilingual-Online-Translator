@@ -4,37 +4,6 @@ from bs4 import BeautifulSoup
 def show_message():
     print('Type "en" if you want to translate from French into English, or "fr" if you want to translate from English into French:')
 
-
-
-def main():
-    show_message()
-    user_input_language = input()
-    print("Type the word you want to translate:")
-    user_input_text = input()
-    print(f'You chose "{user_input_language}" as the language to translate "{user_input_text}" to.')
-
-    request = requests.get(make_url(user_input_language, user_input_text), headers={'User-Agent': 'Mozilla/5.0'})
-    soup = BeautifulSoup(request.content, 'lxml')
-
-    if request.ok:
-        print('200 OK')
-    else:
-        print('Something went wrong')
-        exit()
-
-    single_results = [element.get_text(strip=True) for element in soup.select('.translation')]
-
-    quote_results = []
-    for div in soup.find_all("div", {'class': "example"}):
-        span_tag = [a.get_text() for a in div.find_all("span", {'class': "text"})]
-        for element in span_tag:
-            quote_results.append(element.strip())
-
-    print('Translations')
-    print(single_results)
-    print(quote_results)
-
-
 def make_url(language_to: str, text: str) -> str:
     full_url = 'https://context.reverso.net/translation/'
     if language_to == 'fr':
@@ -43,6 +12,36 @@ def make_url(language_to: str, text: str) -> str:
         full_url += 'french-english/'
 
     return full_url + text
+
+def main():
+    show_message()
+    user_input_language = input()
+    print("Type the word you want to translate:")
+    user_input_text = input()
+    print(f'You chose "{user_input_language}" as the language to translate "{user_input_text}" to.')
+
+    headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                             "Chrome/80.0.3987.132 Safari/537.36"}
+    url = make_url(user_input_language, user_input_text)
+    request = requests.get(url, headers=headers)
+    soup = BeautifulSoup(request.content, 'lxml')
+
+    if request.ok:
+        print('200 OK')
+    else:
+        print('Something went wrong')
+        exit()
+
+
+
+    single_results = [x.get_text(strip=True) for x in soup.select("#translations-content > .translation")]
+
+    # strip(), not get_text(strip=True) because it is a sentence, and it would delete some whitespaces in it
+    quote_results = [x.text.strip() for x in soup.select("#examples-content > .example >  .ltr")]
+
+    print('Translations')
+    print(single_results)
+    print(quote_results)
 
 
 if __name__ == '__main__':  # run as script
