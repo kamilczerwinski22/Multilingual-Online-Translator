@@ -1,62 +1,62 @@
 import requests
 from bs4 import BeautifulSoup
+import argparse
 
-AVAILABLE_LANGUAGES = {
-    '0': 'all',
-    '1': 'Arabic',
-    '2': 'German',
-    '3': 'English',
-    '4': 'Spanish',
-    '5': 'French',
-    '6': 'Hebrew',
-    '7': 'Japanese',
-    '8': 'Dutch',
-    '9': 'Polish',
-    '10': 'Portuguese',
-    '11': 'Romanian',
-    '12': 'Russian',
-    '13': 'Turkish',
-}
+AVAILABLE_LANGUAGES = ('all',
+                       'arabic',
+                       'german',
+                       'english',
+                       'spanish',
+                       'french',
+                       'hebrew',
+                       'japanese',
+                       'dutch',
+                       'polish',
+                       'portuguese',
+                       'romanian',
+                       'russian',
+                       'turkish')
 
 def show_available_languages():
     """Function for showing all available languages."""
     print("Hello, you're welcome to the translator. Translator supports: ")
-    for idx, element in AVAILABLE_LANGUAGES.items():
+    for idx, element in enumerate(AVAILABLE_LANGUAGES[1:], 1):
         if idx != '0':
             print(f"{idx}. {element}")
 
 def make_url(language_from: str, language_to: str, word: str) -> list:
     """Function for making url. Always returns list with all made links (if one language was chose, list of len 1)."""
     # return list with one url if just one language
-    if language_to != '0':
-        return [f"https://context.reverso.net/translation/{AVAILABLE_LANGUAGES[language_from].lower()}-"
-                f"{AVAILABLE_LANGUAGES[language_to].lower()}"
+    if language_to != 'all':
+        return [f"https://context.reverso.net/translation/{language_from}-"
+                f"{language_to}"
                 f"/{word}"]
 
     # return list of url's if more that one language
     urls = []
-    for current_language in list(AVAILABLE_LANGUAGES.values())[1:]:
-        urls.append(f"https://context.reverso.net/translation/{AVAILABLE_LANGUAGES[language_from].lower()}-"
-                    f"{current_language.lower()}/{word}")
+    for current_language in AVAILABLE_LANGUAGES[1:]:
+        if current_language != language_from:
+            urls.append(f"https://context.reverso.net/translation/{language_from}-"
+                        f"{current_language}/{word}")
+
     return urls
 
-def results_print_and_write(singles: list, sentences: list, language: str, user_word: str, num_of_translations: int):
+def results_write_to_file(singles: list, sentences: list, language: str, user_word: str, num_of_translations: int):
     """Function for writing results to file."""
     with open(f'{user_word}.txt', 'a+', encoding="UTF-8") as f:
-        f.write(f'{language} Translations:\n')
+        f.write(f'{language.capitalize()} Translations:\n')
 
         # single words
         singles = singles[:num_of_translations]
         for word in singles:
             f.write(word + '\n')
-        f.write(f'\n{language} Examples:\n')
+        f.write(f'\n{language.capitalize()} examples:\n')
 
         # sentences
         for i in range(len(singles)):
             f.write(sentences[i * 2] + "\n")
             f.write(sentences[i * 2 + 1] + '\n\n')
         f.write('\n')
-    read_file(f"{user_word}.txt")
 
 def read_file(file: str):
     """Function for reading file."""
@@ -82,10 +82,10 @@ def take_input() -> tuple:
     user_word = input()
     return user_language_from, user_language_to, user_word
 
-def make_translations(url: list, user_language_num: str, user_word: str):
+def make_translations(url: list, check_if_all: str):
     """Function for webscraping data from reverso.net"""
     global session
-    num_of_translations = 1 if user_language_num == '0' else 5
+    num_of_translations = 1 if check_if_all == 'all' else 5
     headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
                              "Chrome/80.0.3987.132 Safari/537.36"}
     for idx, link in enumerate(url, 1):
@@ -94,24 +94,31 @@ def make_translations(url: list, user_language_num: str, user_word: str):
         # check_response(request)
 
         single_results = [x.get_text(strip=True) for x in soup.select("#translations-content > .translation")]
-        # strip(), not get_text(strip=True) because it is a sentence, and it would delete some whitespaces in it
-        quote_results = [x.text.strip() for x in soup.select("#examples-content > .example >  .ltr")]
-        if user_language_num == '0':
-            results_print_and_write(single_results, quote_results, AVAILABLE_LANGUAGES[str(idx)], user_word,
-                                    num_of_translations)
-        else:
-            results_print_and_write(single_results, quote_results, AVAILABLE_LANGUAGES[user_language_num], user_word,
-                                    num_of_translations)
+        quote_results = [item.text.strip() for item in soup.find_all('div', {'class': ['src', 'trg']})]
+        quote_results = [x for x in quote_results if len(x) != 0]
+
+        *_, language, user_word = link.split('/')
+        language_from, language_to = language.split('-')
+        results_write_to_file(single_results, quote_results, language_to, user_word,
+                              num_of_translations)
+    read_file(user_word + '.txt')
 
 def main():
     global session  # session for faster loading
     session = requests.Session()
-    show_available_languages()
-    user_language_from_num, user_language_to_num, user_word = take_input()
-    url = make_url(language_from=user_language_from_num,
-                   language_to=user_language_to_num,
-                   word=user_word)
-    make_translations(url, user_language_to_num, user_word)
+    # show_available_languages()
+    # user_language_from_num, user_language_to_num, user_word = take_input()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('user_language_from', action="store")
+    parser.add_argument('user_language_to', action="store")
+    parser.add_argument('user_word', action="store")
+    args = parser.parse_args()
+
+    url = make_url(language_from=args.user_language_from,
+                   language_to=args.user_language_to,
+                   word=args.user_word)
+    make_translations(url, args.user_language_to)
 
 if __name__ == '__main__':  # run as script
     main()
