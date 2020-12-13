@@ -1,6 +1,9 @@
 ## Multilingual Online Translator project from Jetbrains - basics of python
 
-## ONGOING
+## COMPLETED
+
+TODO's
+* Better documentation
 
 
 Comments: Spaces in catalog are Jetbrains standard, I did not change it due to possible errors during testing.
