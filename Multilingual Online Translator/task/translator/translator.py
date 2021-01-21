@@ -121,7 +121,8 @@ def main():
     parser = argparse.ArgumentParser(
         description=''' Welcome to Multilingual Online Translator.
                         As arguments, first type your language, then language you want translate to,
-                        and as a third argument your word.'''
+                        and as a third argument your word. Languages: all, arabic, german, english, spanish, french, 
+                        hebrew, japanese, dutch, polish, portuguese, romanian, russian, turkish'''
     )
     parser.add_argument('user_language_from', action="store")
     parser.add_argument('user_language_to', action="store")
